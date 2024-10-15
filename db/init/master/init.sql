@@ -15,7 +15,7 @@ END $$;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'mydb') THEN
-        PERFORM dblink_exec('dbname=postgres', 'CREATE DATABASE mydb');
+        EXECUTE 'CREATE DATABASE mydb';
     END IF;
 END $$;
 
