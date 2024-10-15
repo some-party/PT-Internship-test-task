@@ -1,0 +1,203 @@
+# ---
+# - name: Deploy Telegram Bot
+#   hosts: bot_host
+#   become: true
+#   gather_facts: no
+
+#   tasks:
+#     - name: Клонируем github
+#       git:
+#         repo: "https://github.com/some-party/PT-Internship-test-task.git"
+#         dest: /opt/telegram_bot
+#         version: docker
+
+#     - name: Установка pip
+#       apt:
+#         name:
+#           - python3-pip
+#         state: present
+
+#     - name: Установка модулей из pip
+#       pip:
+#         name:
+#           - paramiko
+#           - psycopg2-binary
+#           - python-dotenv
+#           - python-telegram-bot==13.7
+
+- name: Настраиваем репликацию PostgreSQL
+  hosts: db_host
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    # - name: Установка curl и ca-certificates для репозитория PostgreSQL
+    #   apt:
+    #     name:
+    #       - curl
+    #       - ca-certificates
+    #     state: present
+    #     update_cache: yes
+
+    # - name: Создание директории для ключа репозитория PostgreSQL
+    #   file:
+    #     path: /usr/share/postgresql-common/pgdg
+    #     state: directory
+    #     mode: "0755"
+
+    # - name: Скачивание ключа репозитория PostgreSQL
+    #   get_url:
+    #     url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    #     dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+
+    # - name: Создание конфигурационного файла для репозитория PostgreSQL
+    #   shell: echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+    # - name: Обновление списка пакетов
+    #   apt:
+    #     update_cache: yes
+
+    # - name: Установка PostgreSQL 15
+    #   apt:
+    #     name:
+    #       - postgresql-15
+    #       - postgresql-contrib
+    #       - libpq-dev
+    #     state: present
+    #     update_cache: yes
+
+    # - name: Старт и включение PostgreSQL
+    #   service:
+    #     name: postgresql
+    #     state: started
+    #     enabled: yes
+
+    # - name: Создание директории для архивов WAL
+    #   file:
+    #     path: /oracle/pg_data/archive
+    #     state: directory
+    #     owner: "{{ db_user }}"
+    #     group: "{{ db_user }}"
+    #     recurse: true
+
+    # - name: Конфигурация pg_hba.conf для репликации
+    #   blockinfile:
+    #     path: /etc/postgresql/15/main/pg_hba.conf
+    #     block: |
+    #       local all {{ db_user }} peer
+    #       host all all 0.0.0.0/0 md5
+    #       host replication {{ db_repl_user }} {{ db_host }}/32 scram-sha-256
+    #   become: true
+
+    # - name: Конфигурация postgresql.conf для репликации
+    #   blockinfile:
+    #     path: /etc/postgresql/15/main/postgresql.conf
+    #     block: |
+    #       listen_addresses = '*'
+    #       port = 5432
+    #       wal_log_hints = on
+    #       hot_standby = on
+    #       max_replication_slots = 10
+    #       hot_standby_feedback = on
+    #       log_replication_commands = on
+    #       archive_mode = on
+    #       archive_command = 'cp %p /oracle/pg_data/archive/%f'
+    #       max_wal_senders = 10
+    #       wal_level = replica
+    #   become: true
+
+    # - name: Перезапуск PostgreSQL
+    #   service:
+    #     name: postgresql
+    #     state: restarted
+
+    - name: Клонируем github
+      git:
+        repo: "https://github.com/some-party/PT-Internship-test-task.git"
+        dest: /opt/telegram_bot
+        version: docker
+
+    - name: Установка прав на файл init.sql
+      file:
+        path: /opt/telegram_bot/db/init/master/init.sql
+        owner: "{{ db_user }}"
+        group: "{{ db_user }}"
+        mode: "0644"
+
+    - name: Выполнение init.sql
+      shell: sudo -u {{ db_user }} psql -a -f /opt/telegram_bot/db/init/master/init.sql
+      become: true
+
+- name: Конфигурируем PostgreSQL Slave
+  hosts: bot_host
+  become: true
+
+  tasks:
+    - name: Установка необходимых пакетов для репозитория PostgreSQL
+      apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Создание директории для ключа репозитория PostgreSQL
+      file:
+        path: /usr/share/postgresql-common/pgdg
+        state: directory
+        mode: "0755"
+
+    - name: Скачивание ключа репозитория PostgreSQL
+      get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+
+    - name: Создание конфигурационного файла для репозитория PostgreSQL
+      shell: echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+    - name: Обновление списка пакетов
+      apt:
+        update_cache: yes
+
+    - name: Установка PostgreSQL 15
+      apt:
+        name:
+          - postgresql-15
+          - postgresql-contrib
+          - libpq-dev
+        state: present
+        update_cache: yes
+
+    - name: Выключение PostgreSQL сервиса
+      systemd:
+        name: postgresql
+        state: stopped
+
+    - name: Удаление основной директории PostgreSQL для репликации
+      file:
+        path: /var/lib/postgresql/15/main/
+        state: absent
+
+    - name: Инициализация репликации базы данных
+      command: pg_basebackup -h {{ db_host }} -D /var/lib/postgresql/15/main/ -p 5432 -U {{ db_repl_user }} -vP -w
+      become_user: "{{ db_user }}"
+      environment:
+        PGPASSWORD: "{{ password }}"
+
+    - name: Изменение прав на директорию PostgreSQL
+      command: chown -R postgres:postgres /var/lib/postgresql/
+      become_user: "{{ db_user }}"
+
+    - name: Старт PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+
+- name: Deploy Telegram Bot
+  hosts: master
+  become: true
+
+  tasks:
+    - name: Запуск Telegram Bot
+      shell: python3 {{ WORKDIR }}/bot.py &
