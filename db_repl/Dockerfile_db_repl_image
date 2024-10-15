@@ -1,0 +1,7 @@
+FROM postgres:17 as db_repl_image
+
+RUN mkdir /save && \
+    chown postgres:postgres /save && \
+    chmod 700 /save
+
+EXPOSE 5432
