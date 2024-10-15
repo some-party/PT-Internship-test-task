@@ -1,25 +1,27 @@
-CREATE USER repl_user WITH REPLICATION ENCRYPTED PASSWORD '123';
-SELECT pg_create_physical_replication_slot('replication_slot');
-
--- Создание базы данных
-DO $$ 
+DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'mydb') THEN
-        CREATE DATABASE mydb;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'repl_user') THEN
+        CREATE ROLE repl_user WITH REPLICATION LOGIN ENCRYPTED PASSWORD '123';
     END IF;
 END $$;
 
--- Подключение к базе данных
+SELECT pg_create_physical_replication_slot('replication_slot');
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'mydb') THEN
+        PERFORM dblink_exec('dbname=postgres', 'CREATE DATABASE mydb');
+    END IF;
+END $$;
+
 \connect mydb;
 
--- Создание таблицы emails
-CREATE TABLE emails (
+CREATE TABLE IF NOT EXISTS emails (
   id SERIAL PRIMARY KEY,
   email TEXT UNIQUE
 );
 
--- Создание таблицы phone_numbers
-CREATE TABLE phone_numbers (
+CREATE TABLE IF NOT EXISTS phone_numbers (
   id SERIAL PRIMARY KEY,
   phone TEXT UNIQUE
 );
