@@ -1,0 +1,22 @@
+[database]
+db_host ansible_host=192.168.102.138 ansible_user=grigorev-timofey-alexandrovich ansible_ssh_pass=123 ansible_sudo_pass=123 ansible_python_interpreter=/usr/bin/python3
+
+[telegram_bot]
+bot_host ansible_host=192.168.102.137 ansible_user=grigorev-timofey-alexandrovich ansible_ssh_pass=123 ansible_sudo_pass=123
+
+[replication:children]
+database
+telegram_bot
+
+[all:vars]
+token=7968786786:AAG7IOPhYRyd419IWKi1ger-VsgCupQGWAk
+db_host=192.168.102.138
+bot_host=192.168.102.137
+password=123
+db_user=grigorev-timofey-alexandrovich
+db_repl_user=repl_user
+db_repl_password=replication_password
+db_repl_host=192.168.1.20
+db_port=5432
+rm_user=grigorev-timofey-alexandrovich
+WORKDIR=/opt/telegram_bot/bot/
