@@ -351,7 +351,7 @@ def save_data(update: Update, context):
                     "INSERT INTO emails (email) VALUES (%s) ON CONFLICT DO NOTHING",
                     [(d,) for d in data],
                 )
-            elif data_type == "phone_numbers":
+            elif data_type == "phone":
                 cur.executemany(
                     "INSERT INTO phone_numbers (phone) VALUES (%s) ON CONFLICT DO NOTHING",
                     [(d,) for d in data],
