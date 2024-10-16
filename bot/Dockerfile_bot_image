@@ -15,10 +15,10 @@ RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
 WORKDIR /app
 COPY .env ./ 
 
-COPY requirements.txt ./ 
+COPY ./bot/requirements.txt ./ 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY bot.py .
+COPY ./bot/bot.py .
 
 EXPOSE 22
 

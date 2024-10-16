@@ -1,4 +1,4 @@
-DO $$
+DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'repl_user') THEN
         CREATE ROLE repl_user WITH REPLICATION LOGIN ENCRYPTED PASSWORD '123';
@@ -12,8 +12,12 @@ BEGIN
     END IF;
 END $$;
 
-CREATE DATABASE mydb;
-
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'mydb') THEN
+        CREATE DATABASE mydb;
+    END IF;
+END $$;
 
 \connect mydb;
 

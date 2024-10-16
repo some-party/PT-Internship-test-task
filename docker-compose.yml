@@ -2,7 +2,7 @@ services:
   bot:
     build:
       context: .
-      dockerfile: Dockerfile_bot_image
+      dockerfile: ./bot/Dockerfile_bot_image
     read_only: false
     image: bot_image
     restart: always 
@@ -24,7 +24,7 @@ services:
   postgres-master:
     build:
       context: .
-      dockerfile: Dockerfile_db_image
+      dockerfile: ./db/Dockerfile_db_image
     image: db_image
     container_name: postgres-master
     restart: always
@@ -42,8 +42,8 @@ services:
       POSTGRES_LOG_DIRECTORY: '/var/log/postgresql'
       POSTGRES_LOG_FILENAME: 'postgresql-%Y-%m-%d_%H%M%S.log'
     volumes:
-      - ./init/master/init.sql:/docker-entrypoint-initdb.d/00_init.sql
-      - postgresql_logs:/var/log/postgresql  # Добавьте том для логов
+      - ./db/init/master/init.sql:/docker-entrypoint-initdb.d/00_init.sql
+      - postgresql_logs:/var/log/postgresql
     networks:
       - app_network
     ports:
@@ -65,7 +65,7 @@ services:
   postgres-slave:
     build:
       context: .
-      dockerfile: Dockerfile_db_repl_image
+      dockerfile: ./db_repl/Dockerfile_db_repl_image
     image: db_repl_image
     container_name: postgres-slave
     restart: always 
